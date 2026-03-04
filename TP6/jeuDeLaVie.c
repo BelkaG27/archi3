@@ -4,6 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <semaphore.h>
+
+int sem_init (sem_t * sem , int pshared , unsigned int value ){}
+int sem_destroy (sem_t * sem ){}
+int sem_wait (sem_t * sem ){}
+int sem_post (sem_t * sem ){}
 
 
 char tab [NB_LIGNES][NB_COLONNES];
@@ -43,6 +49,18 @@ char etat_suivant(int i,int j,char tab[NB_LIGNES][NB_COLONNES]){
                 }
             }
         }
+        if(compteur==3 || compteur==2) return 'x';
+    }
+
+    return '-';
+}
+
+void afficher(char tab[NB_LIGNES][NB_COLONNES]){
+    for(int i=0;i<NB_LIGNES;i++){
+        for(int j=0;j<NB_LIGNES;j++){
+            printf("%c ",tab[i][j]);
+        }
+        printf("\n");
     }
 }
 
@@ -50,5 +68,10 @@ char etat_suivant(int i,int j,char tab[NB_LIGNES][NB_COLONNES]){
 int main() {
     srand(time(NULL));
 
+    init(tab);
+    afficher(tab);
+
     return 0;
 }
+
+
