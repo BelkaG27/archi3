@@ -1,77 +1,45 @@
-# define NB_COLONNES 20
-# define NB_LIGNES 10
+#define NB_LIGNES 10
+#define NB_COLONNES 20
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <semaphore.h>
+typedef char Ttab[NB_LIGNES][NB_COLONNES];
 
-int sem_init (sem_t * sem , int pshared , unsigned int value ){}
-int sem_destroy (sem_t * sem ){}
-int sem_wait (sem_t * sem ){}
-int sem_post (sem_t * sem ){}
-
-
-char tab [NB_LIGNES][NB_COLONNES];
-
-void init(char tab[NB_LIGNES][NB_COLONNES]){
-    int r;
-
-    for(int i=0;i<NB_LIGNES;i++){
-        for(int j=0;j<NB_COLONNES;j++){
-            r = rand() % 2;
-            if(r==0){
-                tab[i][j]='x';
-            }else{
-                tab[i][j]='-';
-            }
-        }
-    }
+char etat_suivant(int i, int j, Ttab tab){
+  // Retourne le prochain etat de la cellule de coordonnees (i,j) dans tab, 
+  // en fonction de ses cellules voisines :
+  // si (i,j)='-' et si elle a exactement 3 cellules voisines egales a 'x'
+  // alors retourne 'x'
+  // sinon si (i,j)='x' et si elle a 2 ou 3 cellules voisines egales a 'x'
+  // alors retourne 'x'
+  // sinon retourne '-'
+  int k, l;
+  int nbVoisins = 0;
+  if (i==0) k=0; else k=i-1;
+  for (; ((k<NB_LIGNES) && (k<i+2)); k++){
+    if (j==0) l=0; else l=j-1;
+    for (; ((l<NB_COLONNES) && (l<j+2)); l++) 
+      if (tab[k][l]=='x') nbVoisins++;
+  }
+  if ((tab[i][j]=='x') && ((nbVoisins==3) || (nbVoisins==4))) return 'x';
+  if ((tab[i][j]=='-') && (nbVoisins==3)) return 'x';
+  return '-';
 }
 
-char etat_suivant(int i,int j,char tab[NB_LIGNES][NB_COLONNES]){
-    int compteur= 0 ;
-    if(tab[i][j]=='-'){
-        for(int I=i-1;I<=i+1;I++){
-            for(int J=j-1;J<=j+1;J++){
-                if(( I<NB_LIGNES || I>=0 ) && ( J<NB_COLONNES || J>=0 )){
-                    if(tab[I][J]=='x')compteur++;
-                }
-            }
-        }
-       if(compteur>=3) return 'x';
-    
-    }else if(tab[i][j]=='x'){
-        for(int I=i-1;I<=i+1;I++){
-            for(int J=j-1;J<=j+1;J++){
-                if(( I<NB_LIGNES || I>=0 ) && ( J<NB_COLONNES || J>=0 )){
-                    if(tab[I][J]=='x')compteur++;
-                }
-            }
-        }
-        if(compteur==3 || compteur==2) return 'x';
-    }
-
-    return '-';
+void affiche(Ttab tab){
+  // affiche la grille tab[NB_LIGNES][NB_COLONNES]
+  int i, j;
+  for (i=0; i<NB_LIGNES; i++){
+    for (j=0; j<NB_COLONNES; j++)
+      printf("%c",tab[i][j]);
+    printf("\n");
+  }
 }
 
-void afficher(char tab[NB_LIGNES][NB_COLONNES]){
-    for(int i=0;i<NB_LIGNES;i++){
-        for(int j=0;j<NB_LIGNES;j++){
-            printf("%c ",tab[i][j]);
-        }
-        printf("\n");
-    }
+void init(Ttab tab){
+  // initialise la grille tab[NB_LIGNES][NB_COLONNES] 
+  // avec NB_LIGNESxNB_COLONNES caract�res lus sur l'entr�e standard
+  int i, j;
+  char c;
+  for (i=0; i<NB_LIGNES; i++)
+    for (j=0; j<NB_COLONNES; j++)
+      read(0,&tab[i][j],1);
 }
-
-
-int main() {
-    srand(time(NULL));
-
-    init(tab);
-    afficher(tab);
-
-    return 0;
-}
-
-
