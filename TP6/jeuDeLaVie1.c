@@ -12,7 +12,8 @@ typedef unsigned int uint;
 
 typedef sem_t semaphore;
 
-pthread_mutex_t mutex_compteur=PTHREAD_MUTEX_INITIALIZER;
+sem_t mutex_compteur;
+sem_init(&mutex_compteur, 0, 1);
 
 semaphore tab_sem[NB_LIGNES][NB_COLONNES];
 pthread_t tab_thread[NB_LIGNES][NB_COLONNES];
@@ -83,19 +84,19 @@ void* thread(void* arg){
     while(stop==0){
         char etat = etat_suivant(i,j,tab);
         nouv_tab[i][j]=etat;
-        pthread_mutex_lock(&mutex_compteur);
+        sem_wait(&mutex_compteur);
         compteur_case++;
-        pthread_mutex_unlock(&mutex_compteur);
+        sem_post(&mutex_compteur);
         sem_wait(&tab_sem[i][j]);
     } 
 }
 
 void* thread_centrale(void* arg){
     while(stop==0){
-        pthread_mutex_lock(&mutex_compteur);
+        sem_wait(&mutex_compteur);
         if(compteur_case==NB_COLONNES*NB_LIGNES){
             compteur_case=0;
-            pthread_mutex_unlock(&mutex_compteur);
+            sem_post(&mutex_compteur);
             stop=1;
             for(int i=0;i<NB_LIGNES;i++){
                 for(int j=0;j<NB_COLONNES;j++){
@@ -112,7 +113,7 @@ void* thread_centrale(void* arg){
                 }
             }  
         }else{
-        pthread_mutex_unlock(&mutex_compteur);
+        sem_post(&mutex_compteur);
         }
     }
 }
