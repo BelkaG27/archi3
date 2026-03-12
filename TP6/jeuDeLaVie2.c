@@ -10,10 +10,9 @@ typedef unsigned int uint;
 
 typedef sem_t semaphore;
 
-sem_t mutex_compteur;
+pthread_mutex_t mutex_compteur;
+pthread_cond_t cond;
 
-
-semaphore tab_sem[NB_LIGNES][NB_COLONNES];
 pthread_t tab_thread[NB_LIGNES][NB_COLONNES];
 
 char tab [NB_LIGNES][NB_COLONNES];
@@ -82,41 +81,29 @@ void* thread(void* arg){
     while(stop==0){
         char etat = etat_suivant(i,j,tab);
         nouv_tab[i][j]=etat;
-        sem_wait(&mutex_compteur);
+        pthread_mutex_lock(&mutex_compteur);
         compteur_case++;
-        sem_post(&mutex_compteur);
-        sem_wait(&tab_sem[i][j]);
+        if(compteur_case<NB_LIGNES*NB_COLONNES){
+            pthread_cond_wait(&cond,&mutex_compteur);
+        }else{
+            compteur_case=0;
+            stop=1;
+            for(int I=0; I<NB_LIGNES; I++){
+                for(int J=0; J<NB_COLONNES; J++){
+                    if(tab[I][J] != nouv_tab[I][J]){
+                        stop = 0;
+                    }
+                    tab[I][J] = nouv_tab[I][J];
+                }
+            }
+            afficher(tab);
+            pthread_cond_broadcast(&cond);
+        }
+        pthread_mutex_unlock(&mutex_compteur);
     } 
     return NULL;
 }
 
-void* thread_centrale(void* arg){
-    while(stop==0){
-        sem_wait(&mutex_compteur);
-        if(compteur_case==NB_COLONNES*NB_LIGNES){
-            compteur_case=0;
-            sem_post(&mutex_compteur);
-            stop=1;
-            for(int i=0;i<NB_LIGNES;i++){
-                for(int j=0;j<NB_COLONNES;j++){
-                    if(tab[i][j]!=nouv_tab[i][j]){
-                        stop=0;
-                    }
-                    tab[i][j]=nouv_tab[i][j];
-                }
-            }
-            afficher(tab);
-            for(int i=0;i<NB_LIGNES;i++){
-                for(int j=0;j<NB_COLONNES;j++){
-                    sem_post(&tab_sem[i][j]);
-                }
-            }  
-        }else{
-        sem_post(&mutex_compteur);
-        }
-    }
-    return NULL;
-}
 
 
 int main() {
@@ -125,32 +112,30 @@ int main() {
     init(tab);
     afficher(tab);
 
+    pthread_mutex_init(&mutex_compteur,NULL);
+    pthread_cond_init(&cond,NULL);
+
 
     uint tab_cmptr[NB_LIGNES*NB_COLONNES];
-    pthread_t central;
     int cmptr=0;
-
-    sem_init(&mutex_compteur, 0, 1);
 
     for(int i=0;i<NB_LIGNES;i++){
         for(int j=0;j<NB_COLONNES;j++){
-            sem_init(&tab_sem[i][j],0,0);
             tab_cmptr[cmptr]=cmptr;
-            pthread_create(&tab_thread[i][j], NULL,thread,&tab_cmptr[cmptr]);
+            pthread_create(&tab_thread[i][j],NULL,thread,&tab_cmptr[cmptr]);
             cmptr++;
         }
     }
 
-    pthread_create(&central,NULL,thread_centrale,NULL);
 
     for(int i=0;i<NB_LIGNES;i++){
         for(int j=0;j<NB_COLONNES;j++){
             pthread_join(tab_thread[i][j],NULL);
         }
     }
-    pthread_join(central,NULL);
 
-    
+    pthread_mutex_destroy(&mutex_compteur);
+    pthread_cond_destroy(&cond);
 
     return 0;
 }
